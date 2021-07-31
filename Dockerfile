@@ -1,10 +1,10 @@
 FROM renskiy/cron:alpine
 
-COPY --from=postgres:12.5-alpine /lib/libssl.so.1.1 /lib/libcrypto.so.1.1 /lib/
-COPY --from=postgres:12.5-alpine /usr/local/lib/libpq.so.5 /usr/local/lib/libpq.so.5
-COPY --from=postgres:12.5-alpine /usr/local/bin/pg_dump /usr/local/bin/pg_dumpall /usr/local/bin/
+COPY --from=postgres:13.3-alpine /lib/libssl.so.1.1 /lib/libcrypto.so.1.1 /lib/
+COPY --from=postgres:13.3-alpine /usr/local/lib/libpq.so.5 /usr/local/lib/libpq.so.5
+COPY --from=postgres:13.3-alpine /usr/local/bin/pg_dump /usr/local/bin/pg_dumpall /usr/local/bin/
 
-COPY --from=redis:4.0.9-alpine /usr/local/bin/redis-cli /usr/local/bin/redis-cli
+COPY --from=redis:5.0.7-alpine /usr/local/bin/redis-cli /usr/local/bin/redis-cli
 
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories &&\
   echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories &&\
