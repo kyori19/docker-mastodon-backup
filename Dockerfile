@@ -1,4 +1,4 @@
-FROM renskiy/cron:alpine
+FROM kyori/cron:alpine
 
 COPY --from=postgres:12.5-alpine /lib/libssl.so.1.1 /lib/libcrypto.so.1.1 /lib/
 COPY --from=postgres:12.5-alpine /usr/local/lib/libpq.so.5 /usr/local/lib/libpq.so.5
