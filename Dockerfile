@@ -12,7 +12,7 @@ RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositorie
   apk upgrade musl &&\
   apk add --no-cache tzdata ca-certificates python3 py3-pip toot &&\
   pip3 install --upgrade pip &&\
-  pip3 install s3cmd &&\
+  pip3 install s3cmd==2.2.0 &&\
   rm -rf /root/.cache/pip
 
 COPY backup.sh /backup.sh
