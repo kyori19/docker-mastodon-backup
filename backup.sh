@@ -32,7 +32,7 @@ EOF
 
 mkdir -p "${ROOT_DIR}"
 
-PGPASSWORD="${PSQL_PASSWORD}" pg_dumpall -h "${PSQL_HOST}" -U postgres > "${ROOT_DIR}/dumpall.sql"
+PGPASSWORD="${PSQL_PASSWORD}" pg_dumpall -h "${PSQL_HOST}" -U postgres | gzip > "${ROOT_DIR}/dumpall.sql.gz"
 
 redis-cli -h "${REDIS_HOST}" -a "${REDIS_PASSWORD}" --rdb "${ROOT_DIR}/dump.rdb"
 
