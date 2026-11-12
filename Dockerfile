@@ -1,21 +1,31 @@
-FROM kyori/cron:alpine
+FROM alpine:3.22
 
-COPY --from=postgres:13.3-alpine /lib/libssl.so.1.1 /lib/libcrypto.so.1.1 /lib/
-COPY --from=postgres:13.3-alpine /usr/local/lib/libpq.so.5 /usr/local/lib/libpq.so.5
-COPY --from=postgres:13.3-alpine /usr/local/bin/pg_dump /usr/local/bin/pg_dumpall /usr/local/bin/
+COPY --from=postgres:17.5-alpine /usr/local/lib/libpq.so.5 /usr/local/lib/libpq.so.5
+COPY --from=postgres:17.5-alpine /usr/local/bin/pg_dump /usr/local/bin/pg_dumpall /usr/local/bin/
 
-COPY --from=redis:5.0.7-alpine /usr/local/bin/redis-cli /usr/local/bin/redis-cli
+COPY --from=kyori/cron:alpine /usr/sbin/start-cron /usr/sbin/start-cron
 
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories &&\
-  echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories &&\
-  echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories &&\
-  apk upgrade musl &&\
-  apk add --no-cache tzdata ca-certificates python3 py3-pip toot &&\
-  pip3 install --upgrade pip &&\
-  pip3 install s3cmd==2.2.0 &&\
-  rm -rf /root/.cache/pip
+COPY --from=redis:8.0.6-alpine /usr/local/bin/redis-cli /usr/local/bin/redis-cli
+
+# An optional CA bundle supports builds behind an HTTPS inspection proxy.
+# Keep pip packages separate from Alpine's system Python (PEP 668).
+RUN --mount=type=secret,id=proxy_ca \
+  set -eu; \
+  build_ca=/etc/ssl/certs/ca-certificates.crt; \
+  if [ -f /run/secrets/proxy_ca ]; then build_ca=/run/secrets/proxy_ca; fi; \
+  SSL_CERT_FILE="$build_ca" apk add --no-cache bash tzdata ca-certificates python3 libmagic toot \
+    libssl3 libcrypto3 krb5-libs libldap lz4-libs zstd-libs; \
+  SSL_CERT_FILE="$build_ca" apk add --no-cache --virtual .build-deps py3-pip; \
+  python3 -m venv --without-pip /opt/venv; \
+  PIP_CERT="$build_ca" pip3 --python /opt/venv/bin/python install --no-cache-dir s3cmd==2.4.0; \
+  apk del .build-deps
+
+ENV PATH="/opt/venv/bin:${PATH}"
 
 COPY backup.sh /backup.sh
-RUN chmod +x /backup.sh
+# Preserve cron wildcards and follow new log output without a busy loop.
+RUN chmod +x /backup.sh && \
+  sed -i -e 's/echo -e ${cron_job}/echo -e "${cron_job}"/' \
+    -e 's|cat /var/log/cron.log|tail -F /var/log/cron.log|' /usr/sbin/start-cron
 
 CMD [ "/bin/sh", "-c",  "start-cron \"${CRON_TIMER} /backup.sh >> /var/log/cron.log 2>&1\"" ]
